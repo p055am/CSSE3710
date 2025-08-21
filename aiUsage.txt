@@ -82,3 +82,88 @@ print(t)  # tensor(7)
 Do you want me to also show how to **wrap an existing PyTorch number (like from a computation) into a tensor** so it stays differentiable (important for autograd)?
 
 ===================================================================================================
+
+Prompt: If I have a function that takes two numbers and returns some kind of product of those numbers, how could I use pytorch tensors to apply that function across a tensor?
+
+Response:
+Great question 👍
+
+In PyTorch, if you have a function that takes two numbers (say `f(a, b)`) and you want to apply it across **tensors**, you usually **vectorize** it by writing the function to operate on **tensors directly** instead of looping over scalars.
+
+---
+
+### Example: A simple product function
+
+Suppose you have:
+
+```python
+def myfunc(a, b):
+    return a * b + 1
+```
+
+Normally this works for scalars, but in PyTorch if you pass in tensors, it works **elementwise**:
+
+```python
+import torch
+
+a = torch.tensor([1, 2, 3])
+b = torch.tensor([4, 5, 6])
+
+print(myfunc(a, b))
+# tensor([ 5, 11, 19])
+```
+
+✅ PyTorch automatically applies the operation elementwise when `a` and `b` are tensors of the same shape.
+
+---
+
+### Broadcasting
+
+If `a` and `b` have **different shapes**, PyTorch will try to **broadcast** them:
+
+```python
+a = torch.tensor([1, 2, 3])
+b = torch.tensor(10)
+
+print(myfunc(a, b))
+# tensor([11, 21, 31])   <-- b=10 is broadcast across the vector
+```
+
+Or with a matrix:
+
+```python
+a = torch.tensor([[1, 2, 3],
+                  [4, 5, 6]])
+b = torch.tensor([10, 20, 30])
+
+print(myfunc(a, b))
+# tensor([[11, 41, 91],
+#         [41, 101, 181]])
+```
+
+---
+
+### If you really need per-element mapping
+
+If your function uses Python-only logic (e.g. conditionals not directly supported by PyTorch), you can use `torch.vectorize`-like patterns:
+
+```python
+def myfunc_scalar(a, b):
+    return a * b if a > b else a + b
+
+vec_func = torch.vmap(lambda x, y: myfunc_scalar(x.item(), y.item()))
+
+a = torch.tensor([1, 2, 3])
+b = torch.tensor([4, 1, 0])
+print(vec_func(a, b))
+```
+
+⚡ Note: `torch.vmap` (introduced in newer PyTorch) helps apply scalar functions efficiently without writing explicit loops.
+
+---
+
+👉 So, the easiest answer: **Just write your function using PyTorch ops** (`+`, `*`, `torch.sin`, etc.), and it will work across entire tensors automatically.
+
+---
+
+Would you like me to show you how to **turn any plain Python function that only works on scalars** into one that works on tensors (using `torch.vectorize` or `torch.jit.script`)? That’s useful if your function isn’t already written in a tensor-friendly way.
